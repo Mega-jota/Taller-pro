@@ -1,18 +1,21 @@
 'use client'
 import { Bell, Search, User } from 'lucide-react'
+import { ReactNode } from 'react'
 
 interface TopbarProps {
   title: string
   subtitle?: string
+  actions?: ReactNode
 }
 
-export default function Topbar({ title, subtitle }: TopbarProps) {
+export default function Topbar({ title, subtitle, actions }: TopbarProps) {
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center px-6 gap-4 sticky top-0 z-30">
       <div className="flex-1">
         <h1 className="text-lg font-bold text-slate-800">{title}</h1>
         {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
 
       {/* Buscador rápido */}
       <div className="relative hidden md:block">
