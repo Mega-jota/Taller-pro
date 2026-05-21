@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard, Car, Users, ClipboardList, Search, Bell,
   Settings, LogOut, Wrench, ChevronRight, Building2
@@ -22,6 +23,11 @@ const bottomItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [tallerNombre, setTallerNombre] = useState('Mi Taller Mecánico')
+  useEffect(() => {
+    const n = localStorage.getItem('taller_nombre')
+    if (n) setTallerNombre(n)
+  }, [])
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col z-50"
@@ -42,7 +48,7 @@ export default function Sidebar() {
       {/* Taller activo */}
       <div className="mx-3 my-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.07)' }}>
         <p className="text-xs" style={{ color: 'var(--sidebar-text)' }}>Taller activo</p>
-        <p className="text-white text-sm font-semibold truncate">Mi Taller Mecánico</p>
+        <p className="text-white text-sm font-semibold truncate">{tallerNombre}</p>
       </div>
 
       {/* Navegacion principal */}

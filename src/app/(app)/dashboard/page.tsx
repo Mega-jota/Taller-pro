@@ -104,7 +104,7 @@ export default function DashboardPage() {
                   {recentOT.map((ot, i) => (
                     <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors">
                       <td className="px-6 py-3">
-                        <Link href={`/ordenes/${i + 8}`}
+                        <Link href={`/ordenes/${parseInt(ot.numero.split('-')[2])}`}
                           className="font-mono font-semibold text-xs"
                           style={{ color: 'var(--accent)' }}>
                           {ot.numero}
