@@ -306,20 +306,30 @@ export default function DetalleInspeccionPage() {
     <div style="font-size:12px; color:#94a3b8;">Inspección ${INFO.codigo} · ${INFO.mecanico}</div>
   </div>
 
-  <script>
-    window.onload = function() {
-      setTimeout(function() { window.print(); }, 400);
-    };
-  </script>
 </body>
 </html>`
 
-    const ventana = window.open('', '_blank', 'width=900,height=800')
-    if (ventana) {
-      ventana.document.write(html)
-      ventana.document.close()
+    // Usar iframe oculto para evitar bloqueo de popups
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;'
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (doc) {
+      doc.open()
+      doc.write(html)
+      doc.close()
+      setTimeout(() => {
+        iframe.contentWindow?.focus()
+        iframe.contentWindow?.print()
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          setExportando(false)
+        }, 1000)
+      }, 600)
+    } else {
+      setExportando(false)
     }
-    setTimeout(() => setExportando(false), 1000)
   }
 
   return (
