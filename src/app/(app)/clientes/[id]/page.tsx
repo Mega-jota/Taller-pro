@@ -10,17 +10,46 @@ import {
 
 type ClienteData = {
   id: string; nombre: string; rut: string; email: string; telefono: string;
-  tipo: string; direccion: string; ciudad: string; notas: string;
+  tipo: string; direccion: string; region: string; ciudad: string; notas: string;
   fecha_registro: string;
 }
 
+const REGIONES_COMUNAS: Record<string, string[]> = {
+  'Arica y Parinacota': ['Arica', 'Camarones', 'General Lagos', 'Putre'],
+  'Tarapacá': ['Alto Hospicio', 'Camiña', 'Colchane', 'Huara', 'Iquique', 'Pica', 'Pozo Almonte'],
+  'Antofagasta': ['Antofagasta', 'Calama', 'María Elena', 'Mejillones', 'Ollagüe', 'San Pedro de Atacama', 'Sierra Gorda', 'Taltal', 'Tocopilla'],
+  'Atacama': ['Alto del Carmen', 'Caldera', 'Chañaral', 'Copiapó', 'Diego de Almagro', 'Freirina', 'Huasco', 'Tierra Amarilla', 'Vallenar'],
+  'Coquimbo': ['Andacollo', 'Canela', 'Combarbalá', 'Coquimbo', 'Illapel', 'La Higuera', 'La Serena', 'Los Vilos', 'Monte Patria', 'Ovalle', 'Paiguano', 'Punitaqui', 'Río Hurtado', 'Salamanca', 'Vicuña'],
+  'Valparaíso': ['Algarrobo', 'Cabildo', 'Calera', 'Cartagena', 'Casablanca', 'Catemu', 'Concón', 'El Quisco', 'El Tabo', 'Hijuelas', 'Isla de Pascua', 'Juan Fernández', 'La Cruz', 'La Ligua', 'Limache', 'Llaillay', 'Los Andes', 'Nogales', 'Olmué', 'Panquehue', 'Papudo', 'Petorca', 'Puchuncaví', 'Putaendo', 'Quillota', 'Quilpué', 'Quintero', 'Rinconada', 'San Antonio', 'San Esteban', 'San Felipe', 'Santa María', 'Santo Domingo', 'Valparaíso', 'Villa Alemana', 'Viña del Mar', 'Zapallar'],
+  'Región Metropolitana': ['Alhué', 'Buin', 'Calera de Tango', 'Cerrillos', 'Cerro Navia', 'Colina', 'Conchalí', 'Curacaví', 'El Bosque', 'El Monte', 'Estación Central', 'Huechuraba', 'Independencia', 'Isla de Maipo', 'La Cisterna', 'La Florida', 'La Granja', 'La Pintana', 'La Reina', 'Lampa', 'Las Condes', 'Lo Barnechea', 'Lo Espejo', 'Lo Prado', 'Macul', 'Maipú', 'Melipilla', 'Ñuñoa', 'Padre Hurtado', 'Paine', 'Pedro Aguirre Cerda', 'Peñaflor', 'Peñalolén', 'Pirque', 'Providencia', 'Pudahuel', 'Puente Alto', 'Quilicura', 'Quinta Normal', 'Recoleta', 'Renca', 'San Bernardo', 'San Joaquín', 'San José de Maipo', 'San Miguel', 'San Pedro', 'San Ramón', 'Santiago', 'Talagante', 'Tiltil', 'Vitacura'],
+  "O'Higgins": ['Chimbarongo', 'Chépica', 'Codegua', 'Coinco', 'Coltauco', 'Doñihue', 'Graneros', 'La Estrella', 'Las Cabras', 'Litueche', 'Lolol', 'Machalí', 'Malloa', 'Marchihue', 'Mostazal', 'Nancagua', 'Navidad', 'Olivar', 'Palmilla', 'Paredones', 'Peralillo', 'Peumo', 'Pichidegua', 'Pichilemu', 'Placilla', 'Pumanque', 'Quinta de Tilcoco', 'Rancagua', 'Rengo', 'Requínoa', 'San Fernando', 'San Francisco de Mostazal', 'San Vicente', 'Santa Cruz'],
+  'Maule': ['Cauquenes', 'Chanco', 'Colbún', 'Constitución', 'Curepto', 'Curicó', 'Empedrado', 'Hualañé', 'Licantén', 'Linares', 'Longaví', 'Maule', 'Molina', 'Parral', 'Pelarco', 'Pelluhue', 'Pencahue', 'Rauco', 'Retiro', 'Río Claro', 'Romeral', 'Sagrada Familia', 'San Clemente', 'San Javier', 'San Rafael', 'Talca', 'Teno', 'Vichuquén', 'Villa Alegre', 'Yerbas Buenas'],
+  'Ñuble': ['Bulnes', 'Chillán', 'Chillán Viejo', 'Cobquecura', 'Coelemu', 'Coihueco', 'El Carmen', 'Ninhue', 'Ñiquén', 'Pemuco', 'Pinto', 'Portezuelo', 'Quillón', 'Quirihue', 'Ránquil', 'San Carlos', 'San Fabián', 'San Ignacio', 'San Nicolás', 'Trehuaco', 'Yungay'],
+  'Biobío': ['Alto Biobío', 'Antuco', 'Arauco', 'Cabrero', 'Cañete', 'Chiguayante', 'Concepción', 'Contulmo', 'Coronel', 'Curanilahue', 'Florida', 'Hualpén', 'Hualqui', 'Laja', 'Lebu', 'Los Ángeles', 'Los Álamos', 'Lota', 'Mulchén', 'Nacimiento', 'Negrete', 'Penco', 'Quilaco', 'Quilleco', 'San Pedro de la Paz', 'San Rosendo', 'Santa Bárbara', 'Santa Juana', 'Talcahuano', 'Tirúa', 'Tomé', 'Tucapel', 'Yumbel'],
+  'La Araucanía': ['Angol', 'Carahue', 'Cholchol', 'Collipulli', 'Cunco', 'Curacautín', 'Curarrehue', 'Ercilla', 'Freire', 'Galvarino', 'Gorbea', 'Lautaro', 'Loncoche', 'Lonquimay', 'Los Sauces', 'Lumaco', 'Melipeuco', 'Nueva Imperial', 'Padre Las Casas', 'Perquenco', 'Pitrufquén', 'Pucón', 'Purén', 'Renaico', 'Saavedra', 'Temuco', 'Teodoro Schmidt', 'Toltén', 'Traiguén', 'Victoria', 'Vilcún', 'Villarrica'],
+  'Los Ríos': ['Corral', 'Futrono', 'La Unión', 'Lago Ranco', 'Lanco', 'Los Lagos', 'Máfil', 'Mariquina', 'Paillaco', 'Panguipulli', 'Río Bueno', 'Valdivia'],
+  'Los Lagos': ['Ancud', 'Calbuco', 'Castro', 'Chaitén', 'Chonchi', 'Cochamó', 'Curaco de Vélez', 'Dalcahue', 'Fresia', 'Frutillar', 'Futaleufú', 'Hualaihué', 'Llanquihue', 'Los Muermos', 'Maullín', 'Osorno', 'Palena', 'Puerto Montt', 'Puerto Octay', 'Puerto Varas', 'Puqueldón', 'Purranque', 'Puyehue', 'Queilén', 'Quellón', 'Quemchi', 'Quinchao', 'Río Negro', 'San Juan de la Costa', 'San Pablo'],
+  'Aysén': ['Aysén', 'Chile Chico', 'Cisnes', 'Cochrane', 'Coyhaique', 'Guaitecas', 'Lago Verde', "O'Higgins", 'Río Ibáñez', 'Tortel'],
+  'Magallanes': ['Antártica', 'Cabo de Hornos', 'Laguna Blanca', 'Natales', 'Porvenir', 'Primavera', 'Punta Arenas', 'Río Verde', 'San Gregorio', 'Timaukel', 'Torres del Paine'],
+}
+
+const REGIONES = Object.keys(REGIONES_COMUNAS)
+
+// Busca la región de una comuna (para pre-llenar el selector al editar)
+function findRegion(ciudad: string): string {
+  for (const [region, comunas] of Object.entries(REGIONES_COMUNAS)) {
+    if (comunas.includes(ciudad)) return region
+  }
+  return ''
+}
+
 const CLIENTES_INICIAL: Record<string, ClienteData> = {
-  '1': { id: '1', nombre: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@gmail.com', telefono: '+56 9 8765 4321', tipo: 'particular', direccion: 'Los Aromos 456, Las Condes', ciudad: 'Santiago', notas: 'Prefiere que lo llamen en la mañana.', fecha_registro: '2025-03-10' },
-  '2': { id: '2', nombre: 'María López', rut: '9.876.543-2', email: 'maria@empresa.cl', telefono: '+56 9 1234 5678', tipo: 'particular', direccion: 'Av. Providencia 789', ciudad: 'Santiago', notas: '', fecha_registro: '2025-06-20' },
-  '3': { id: '3', nombre: 'LogiChile SpA', rut: '76.543.210-K', email: 'flota@logichile.cl', telefono: '+56 2 2345 6789', tipo: 'empresa', direccion: 'Av. Industrial 4521', ciudad: 'Pudahuel', notas: 'Empresa de transporte. Varios vehículos. Ver módulo Empresas.', fecha_registro: '2024-11-05' },
-  '4': { id: '4', nombre: 'Roberto Silva', rut: '14.567.890-1', email: 'rsilva@gmail.com', telefono: '+56 9 5678 1234', tipo: 'particular', direccion: 'Calle El Roble 123', ciudad: 'Maipú', notas: '', fecha_registro: '2025-01-15' },
-  '5': { id: '5', nombre: 'Transportes Norte Ltda.', rut: '78.901.234-5', email: 'admin@transnorte.cl', telefono: '+56 2 3456 7890', tipo: 'empresa', direccion: 'Ruta 5 Norte km 12', ciudad: 'Lampa', notas: 'Flota de camiones medianos.', fecha_registro: '2024-08-20' },
-  '6': { id: '6', nombre: 'Ana González', rut: '16.789.012-3', email: 'ana.glez@hotmail.com', telefono: '+56 9 9012 3456', tipo: 'particular', direccion: 'Los Pinos 88', ciudad: 'Ñuñoa', notas: '', fecha_registro: '2026-01-08' },
+  '1': { id: '1', nombre: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@gmail.com', telefono: '+56 9 8765 4321', tipo: 'particular', direccion: 'Los Aromos 456', region: 'Región Metropolitana', ciudad: 'Las Condes', notas: 'Prefiere que lo llamen en la mañana.', fecha_registro: '2025-03-10' },
+  '2': { id: '2', nombre: 'María López', rut: '9.876.543-2', email: 'maria@empresa.cl', telefono: '+56 9 1234 5678', tipo: 'particular', direccion: 'Av. Providencia 789', region: 'Región Metropolitana', ciudad: 'Providencia', notas: '', fecha_registro: '2025-06-20' },
+  '3': { id: '3', nombre: 'LogiChile SpA', rut: '76.543.210-K', email: 'flota@logichile.cl', telefono: '+56 2 2345 6789', tipo: 'empresa', direccion: 'Av. Industrial 4521', region: 'Región Metropolitana', ciudad: 'Pudahuel', notas: 'Empresa de transporte. Varios vehículos. Ver módulo Empresas.', fecha_registro: '2024-11-05' },
+  '4': { id: '4', nombre: 'Roberto Silva', rut: '14.567.890-1', email: 'rsilva@gmail.com', telefono: '+56 9 5678 1234', tipo: 'particular', direccion: 'Calle El Roble 123', region: 'Región Metropolitana', ciudad: 'Maipú', notas: '', fecha_registro: '2025-01-15' },
+  '5': { id: '5', nombre: 'Transportes Norte Ltda.', rut: '78.901.234-5', email: 'admin@transnorte.cl', telefono: '+56 2 3456 7890', tipo: 'empresa', direccion: 'Ruta 5 Norte km 12', region: 'Región Metropolitana', ciudad: 'Lampa', notas: 'Flota de camiones medianos.', fecha_registro: '2024-08-20' },
+  '6': { id: '6', nombre: 'Ana González', rut: '16.789.012-3', email: 'ana.glez@hotmail.com', telefono: '+56 9 9012 3456', tipo: 'particular', direccion: 'Los Pinos 88', region: 'Región Metropolitana', ciudad: 'Ñuñoa', notas: '', fecha_registro: '2026-01-08' },
 }
 
 const VEHICULOS_POR_CLIENTE: Record<string, Array<{ id: string; patente: string; modelo: string; year: string; km: string }>> = {
@@ -46,9 +75,7 @@ const OT_POR_CLIENTE: Record<string, Array<{ id: number; numero: string; fecha: 
     { id: 12, numero: 'OT-2026-0012', fecha: '18 may 2026', estado: 'en_proceso', monto: '$185.000', vehiculo: 'ABCD12 Toyota Hilux' },
     { id: 5, numero: 'OT-2026-0005', fecha: '5 may 2026', estado: 'entregado', monto: '$320.000', vehiculo: 'WXYZ98 Chevrolet Cruze' },
   ],
-  '2': [
-    { id: 11, numero: 'OT-2026-0011', fecha: '15 may 2026', estado: 'listo', monto: '$95.000', vehiculo: 'EFGH34 Kia Sportage' },
-  ],
+  '2': [{ id: 11, numero: 'OT-2026-0011', fecha: '15 may 2026', estado: 'listo', monto: '$95.000', vehiculo: 'EFGH34 Kia Sportage' }],
   '3': [
     { id: 10, numero: 'OT-2026-0010', fecha: '12 may 2026', estado: 'diagnostico', monto: 'Por cotizar', vehiculo: 'IJKL56 Ford Ranger' },
     { id: 7, numero: 'OT-2026-0007', fecha: '2 may 2026', estado: 'entregado', monto: '$450.000', vehiculo: 'MNOP78 Toyota Hilux' },
@@ -66,38 +93,22 @@ const estadoOT: Record<string, { label: string; cls: string }> = {
   entregado: { label: 'Entregado', cls: 'bg-slate-100 text-slate-500' },
 }
 
-const CIUDADES_CHILE = [
-  'Santiago', 'Las Condes', 'Providencia', 'Maipú', 'Puente Alto', 'La Florida',
-  'Ñuñoa', 'Vitacura', 'Lo Barnechea', 'San Bernardo', 'Pudahuel', 'Quilicura',
-  'Peñalolén', 'La Reina', 'Macul', 'Estación Central', 'Colina', 'Lampa',
-  'Valparaíso', 'Viña del Mar', 'Quilpué', 'Villa Alemana', 'San Antonio',
-  'Concepción', 'Talcahuano', 'Los Ángeles', 'Coronel', 'Hualpén',
-  'Temuco', 'Padre Las Casas', 'Villarrica', 'Pucón', 'Angol',
-  'Puerto Montt', 'Osorno', 'Puerto Varas', 'Castro', 'Ancud',
-  'Antofagasta', 'Calama', 'Tocopilla', 'Mejillones',
-  'La Serena', 'Coquimbo', 'Ovalle', 'Illapel',
-  'Copiapó', 'Vallenar', 'Caldera',
-  'Rancagua', 'San Fernando', 'Pichilemu', 'Machalí',
-  'Talca', 'Curicó', 'Linares', 'Constitución',
-  'Chillán', 'San Carlos', 'Bulnes',
-  'Valdivia', 'La Unión', 'Panguipulli',
-  'Iquique', 'Alto Hospicio', 'Pozo Almonte',
-  'Arica', 'Putre',
-  'Punta Arenas', 'Puerto Natales',
-  'Coyhaique',
-].sort()
-
 export default function DetalleClientePage() {
   const params = useParams()
   const id = String(params.id)
 
-  const [clienteData, setClienteData] = useState<ClienteData | null>(CLIENTES_INICIAL[id] || null)
+  const base = CLIENTES_INICIAL[id] || null
+  const [clienteData, setClienteData] = useState<ClienteData | null>(base)
   const [tab, setTab] = useState<'vehiculos' | 'ordenes'>('vehiculos')
   const [editando, setEditando] = useState(false)
   const [guardado, setGuardado] = useState(false)
+
+  // Estado del formulario de edición
   const [form, setForm] = useState<ClienteData>(
-    CLIENTES_INICIAL[id] || { id, nombre: '', rut: '', email: '', telefono: '', tipo: 'particular', direccion: '', ciudad: '', notas: '', fecha_registro: '' }
+    base || { id, nombre: '', rut: '', email: '', telefono: '', tipo: 'particular', direccion: '', region: '', ciudad: '', notas: '', fecha_registro: '' }
   )
+  // Región separada para el cascada (inicializada desde los datos guardados)
+  const [formRegion, setFormRegion] = useState(base?.region || '')
 
   const vehiculos = VEHICULOS_POR_CLIENTE[id] || []
   const ordenes = OT_POR_CLIENTE[id] || []
@@ -116,12 +127,19 @@ export default function DetalleClientePage() {
   }
 
   const abrirModal = () => {
-    setForm({ ...clienteData })
+    const region = clienteData.region || findRegion(clienteData.ciudad)
+    setForm({ ...clienteData, region })
+    setFormRegion(region)
     setEditando(true)
   }
 
+  const handleRegionChange = (nuevaRegion: string) => {
+    setFormRegion(nuevaRegion)
+    setForm(f => ({ ...f, region: nuevaRegion, ciudad: '' }))
+  }
+
   const guardarCambios = () => {
-    setClienteData({ ...form })
+    setClienteData({ ...form, region: formRegion })
     setEditando(false)
     setGuardado(true)
     setTimeout(() => setGuardado(false), 3000)
@@ -129,6 +147,8 @@ export default function DetalleClientePage() {
 
   const set = (campo: keyof ClienteData, valor: string) =>
     setForm(f => ({ ...f, [campo]: valor }))
+
+  const comunasDisponibles = formRegion ? (REGIONES_COMUNAS[formRegion] || []) : []
 
   return (
     <div className="fade-in">
@@ -182,17 +202,37 @@ export default function DetalleClientePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">Dirección</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">Dirección (calle y número)</label>
                 <input className="input w-full" value={form.direccion} onChange={e => set('direccion', e.target.value)} placeholder="Calle 123, Depto 4B" />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">Ciudad / Comuna</label>
-                <select className="input w-full" value={form.ciudad} onChange={e => set('ciudad', e.target.value)}>
-                  <option value="">Seleccionar...</option>
-                  {CIUDADES_CHILE.map(c => <option key={c} value={c}>{c}</option>)}
-                  <option value="Otra">Otra</option>
-                </select>
+              {/* Región → Comuna en cascada */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Región</label>
+                  <select className="input w-full" value={formRegion} onChange={e => handleRegionChange(e.target.value)}>
+                    <option value="">Seleccionar región...</option>
+                    {REGIONES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                    Comuna {formRegion && <span className="text-red-400">*</span>}
+                  </label>
+                  {formRegion ? (
+                    <select className="input w-full" value={form.ciudad} onChange={e => set('ciudad', e.target.value)}>
+                      <option value="">Seleccionar comuna...</option>
+                      {comunasDisponibles.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      className="input w-full bg-slate-50 text-slate-400 cursor-not-allowed"
+                      placeholder="Selecciona región primero"
+                      disabled
+                    />
+                  )}
+                </div>
               </div>
 
               <div>
@@ -266,9 +306,9 @@ export default function DetalleClientePage() {
                 <Calendar size={13} className="text-slate-400" />
                 Cliente desde {new Date(clienteData.fecha_registro).toLocaleDateString('es-CL', { year: 'numeric', month: 'long' })}
               </div>
-              {clienteData.direccion && (
+              {(clienteData.direccion || clienteData.ciudad) && (
                 <div className="col-span-2 text-slate-500 text-xs bg-slate-50 rounded-lg p-2">
-                  📍 {clienteData.direccion}{clienteData.ciudad ? `, ${clienteData.ciudad}` : ''}
+                  📍 {[clienteData.direccion, clienteData.ciudad, clienteData.region].filter(Boolean).join(', ')}
                 </div>
               )}
               {clienteData.notas && (
