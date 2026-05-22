@@ -4,7 +4,7 @@ import Topbar from '@/components/Topbar'
 import Link from 'next/link'
 import {
   ArrowLeft, FileDown, CheckCircle, XCircle, Minus,
-  Car, User, Calendar, Gauge, ChevronDown, ChevronUp
+  Car, User, Calendar, Gauge, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react'
 
 const SECCIONES = [
@@ -113,7 +113,6 @@ const SECCIONES = [
   },
 ]
 
-// Generar datos de ejemplo con estados aleatorios
 function generarItems() {
   const estados: Array<'cumple' | 'no_cumple' | 'na'> = ['cumple', 'cumple', 'cumple', 'cumple', 'no_cumple', 'na']
   const result: Record<string, { estado: 'cumple' | 'no_cumple' | 'na'; obs: string }> = {}
@@ -137,14 +136,191 @@ const estadoConfig = {
   na: { label: 'N/A', cls: 'bg-slate-100 text-slate-500', icon: Minus },
 }
 
+const INFO = {
+  codigo: '#12399',
+  vehiculo: 'IJKL56 · Ford Ranger 2022',
+  cliente: 'María López',
+  fecha: '17 de mayo, 2026',
+  km: '61.000 km',
+  mecanico: 'Carlos Rodríguez',
+  observaciones: [
+    'Vehículo en buen estado general para su año y kilometraje.',
+    'Se recomienda revisar pastillas de freno en próxima mantención.',
+    'Leve fuga de aceite en retén de distribución — monitorear.',
+  ]
+}
+
 export default function DetalleInspeccionPage() {
   const [seccionAbierta, setSeccionAbierta] = useState<number | null>(1)
+  const [exportando, setExportando] = useState(false)
 
   const totalCumple = Object.values(itemsData).filter(i => i.estado === 'cumple').length
   const totalNoCumple = Object.values(itemsData).filter(i => i.estado === 'no_cumple').length
   const totalNa = Object.values(itemsData).filter(i => i.estado === 'na').length
   const total = totalCumple + totalNoCumple + totalNa
   const pct = Math.round((totalCumple / (totalCumple + totalNoCumple || 1)) * 100)
+
+  const exportarPDF = () => {
+    setExportando(true)
+
+    const seccionesHTML = SECCIONES.map(sec => {
+      const secItems = sec.items.map((nombre, idx) => {
+        const it = itemsData[`${sec.numero}-${idx}`]
+        const estadoLabel = it.estado === 'cumple' ? 'CUMPLE' : it.estado === 'no_cumple' ? 'NO CUMPLE' : 'N/A'
+        const estadoColor = it.estado === 'cumple' ? '#16a34a' : it.estado === 'no_cumple' ? '#dc2626' : '#94a3b8'
+        const rowBg = it.estado === 'no_cumple' ? '#fff5f5' : 'white'
+        return `
+          <tr style="background:${rowBg}; border-bottom: 1px solid #f1f5f9;">
+            <td style="padding:6px 8px; color:#94a3b8; font-size:11px; width:32px;">${idx + 1}</td>
+            <td style="padding:6px 8px; font-size:12px; color:#374151;">${nombre}</td>
+            <td style="padding:6px 8px; text-align:center; width:100px;">
+              <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${it.estado === 'cumple' ? '#dcfce7' : it.estado === 'no_cumple' ? '#fee2e2' : '#f1f5f9'}; color:${estadoColor};">
+                ${estadoLabel}
+              </span>
+            </td>
+            <td style="padding:6px 8px; font-size:11px; color:#94a3b8; font-style:italic;">${it.obs || '—'}</td>
+          </tr>`
+      }).join('')
+
+      const cumpleSec = sec.items.filter((_, idx) => itemsData[`${sec.numero}-${idx}`].estado === 'cumple').length
+      const noCumpleSec = sec.items.filter((_, idx) => itemsData[`${sec.numero}-${idx}`].estado === 'no_cumple').length
+
+      return `
+        <div style="margin-bottom:20px; break-inside:avoid;">
+          <div style="background:#f8fafc; padding:10px 14px; border-radius:8px 8px 0 0; border-bottom:2px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:18px;">${sec.emoji}</span>
+              <span style="font-weight:700; color:#1e293b; font-size:13px;">${sec.numero}. ${sec.nombre}</span>
+              <span style="color:#94a3b8; font-size:11px;">${sec.items.length} puntos</span>
+            </div>
+            <div style="display:flex; gap:12px; font-size:11px; font-weight:700;">
+              <span style="color:#16a34a;">✅ ${cumpleSec}</span>
+              <span style="color:#dc2626;">❌ ${noCumpleSec}</span>
+            </div>
+          </div>
+          <table style="width:100%; border-collapse:collapse; border:1px solid #e2e8f0; border-top:0;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:6px 8px; text-align:left; font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">#</th>
+                <th style="padding:6px 8px; text-align:left; font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Punto de revisión</th>
+                <th style="padding:6px 8px; text-align:center; font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Estado</th>
+                <th style="padding:6px 8px; text-align:left; font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Observación</th>
+              </tr>
+            </thead>
+            <tbody>${seccionesHTML}</tbody>
+          </table>
+        </div>`
+    }).join('')
+
+    const pctColor = pct >= 80 ? '#16a34a' : pct >= 60 ? '#ea580c' : '#dc2626'
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inspección ${INFO.codigo} — TallerPro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; background: white; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body style="padding:32px; max-width:900px; margin:0 auto;">
+
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; padding-bottom:20px; border-bottom:2px solid #e2e8f0;">
+    <div>
+      <div style="font-size:11px; color:#94a3b8; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Informe de Inspección Vehicular</div>
+      <div style="font-size:28px; font-weight:800; color:#1e293b; font-family:monospace;">${INFO.codigo}</div>
+      <div style="font-size:13px; color:#64748b; margin-top:4px;">Generado el ${new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px; font-weight:900; color:${pctColor};">${pct}%</div>
+      <div style="font-size:11px; color:#94a3b8;">en buen estado</div>
+      <div style="margin-top:8px; display:inline-block; padding:4px 12px; border-radius:20px; background:#dcfce7; color:#16a34a; font-size:11px; font-weight:700;">✅ Completada</div>
+    </div>
+  </div>
+
+  <!-- Info vehículo -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-bottom:20px; background:#f8fafc; border-radius:12px; padding:16px;">
+    <div>
+      <div style="font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Vehículo</div>
+      <div style="font-size:13px; font-weight:600; color:#1e293b;">${INFO.vehiculo}</div>
+    </div>
+    <div>
+      <div style="font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Cliente</div>
+      <div style="font-size:13px; font-weight:600; color:#1e293b;">${INFO.cliente}</div>
+    </div>
+    <div>
+      <div style="font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Fecha</div>
+      <div style="font-size:13px; font-weight:600; color:#1e293b;">${INFO.fecha}</div>
+    </div>
+    <div>
+      <div style="font-size:10px; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Kilometraje</div>
+      <div style="font-size:13px; font-weight:600; color:#1e293b;">${INFO.km}</div>
+    </div>
+  </div>
+
+  <!-- Resumen global -->
+  <div style="display:flex; gap:16px; margin-bottom:24px;">
+    <div style="flex:1; background:#dcfce7; border-radius:10px; padding:14px 16px; text-align:center;">
+      <div style="font-size:24px; font-weight:800; color:#16a34a;">${totalCumple}</div>
+      <div style="font-size:11px; color:#16a34a; font-weight:600;">✅ CUMPLE</div>
+    </div>
+    <div style="flex:1; background:#fee2e2; border-radius:10px; padding:14px 16px; text-align:center;">
+      <div style="font-size:24px; font-weight:800; color:#dc2626;">${totalNoCumple}</div>
+      <div style="font-size:11px; color:#dc2626; font-weight:600;">❌ NO CUMPLE</div>
+    </div>
+    <div style="flex:1; background:#f1f5f9; border-radius:10px; padding:14px 16px; text-align:center;">
+      <div style="font-size:24px; font-weight:800; color:#94a3b8;">${totalNa}</div>
+      <div style="font-size:11px; color:#94a3b8; font-weight:600;">➖ N/A</div>
+    </div>
+    <div style="flex:1; background:#f8fafc; border-radius:10px; padding:14px 16px; text-align:center;">
+      <div style="font-size:24px; font-weight:800; color:#64748b;">${total}</div>
+      <div style="font-size:11px; color:#64748b; font-weight:600;">TOTAL PUNTOS</div>
+    </div>
+  </div>
+
+  <!-- Barra global -->
+  <div style="height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden; display:flex; margin-bottom:28px;">
+    <div style="width:${(totalCumple / total) * 100}%; background:#4ade80;"></div>
+    <div style="width:${(totalNoCumple / total) * 100}%; background:#f87171;"></div>
+    <div style="width:${(totalNa / total) * 100}%; background:#cbd5e1;"></div>
+  </div>
+
+  <!-- Secciones -->
+  ${seccionesHTML}
+
+  <!-- Observaciones generales -->
+  <div style="margin-top:24px; padding:16px; background:#fffbeb; border-radius:10px; border-left:4px solid #f59e0b;">
+    <div style="font-weight:700; color:#1e293b; margin-bottom:10px;">Observaciones generales</div>
+    ${INFO.observaciones.map((obs, i) => `<div style="font-size:13px; color:#374151; margin-bottom:6px;">${i + 1}) ${obs}</div>`).join('')}
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:32px; padding-top:16px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:12px; color:#94a3b8;">TallerPro · Sistema de Gestión de Taller</div>
+    <div style="font-size:12px; color:#94a3b8;">Inspección ${INFO.codigo} · ${INFO.mecanico}</div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 400);
+    };
+  </script>
+</body>
+</html>`
+
+    const ventana = window.open('', '_blank', 'width=900,height=800')
+    if (ventana) {
+      ventana.document.write(html)
+      ventana.document.close()
+    }
+    setTimeout(() => setExportando(false), 1000)
+  }
 
   return (
     <div className="fade-in">
@@ -155,8 +331,14 @@ export default function DetalleInspeccionPage() {
           <Link href="/inspecciones" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
             <ArrowLeft size={15} /> Volver a inspecciones
           </Link>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">
-            <FileDown size={15} /> Exportar PDF
+          <button
+            onClick={exportarPDF}
+            disabled={exportando}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-60">
+            {exportando
+              ? <><Loader2 size={15} className="animate-spin" /> Generando...</>
+              : <><FileDown size={15} /> Exportar PDF</>
+            }
           </button>
         </div>
 
