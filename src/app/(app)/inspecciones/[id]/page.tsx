@@ -163,7 +163,7 @@ export default function DetalleInspeccionPage() {
   const exportarPDF = () => {
     setExportando(true)
 
-    const seccionesHTML = SECCIONES.map(sec => {
+    const seccionesHTML: string = SECCIONES.map(sec => {
       const secItems = sec.items.map((nombre, idx) => {
         const it = itemsData[`${sec.numero}-${idx}`]
         const estadoLabel = it.estado === 'cumple' ? 'CUMPLE' : it.estado === 'no_cumple' ? 'NO CUMPLE' : 'N/A'
