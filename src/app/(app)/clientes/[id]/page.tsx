@@ -5,14 +5,16 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
   ArrowLeft, Phone, Mail, Car, ClipboardList,
-  Plus, ChevronRight, Edit, Calendar, User
+  Plus, ChevronRight, Edit, Calendar, User, X, Save, CheckCircle
 } from 'lucide-react'
 
-const CLIENTES: Record<string, {
+type ClienteData = {
   id: string; nombre: string; rut: string; email: string; telefono: string;
   tipo: string; direccion: string; ciudad: string; notas: string;
   fecha_registro: string;
-}> = {
+}
+
+const CLIENTES_INICIAL: Record<string, ClienteData> = {
   '1': { id: '1', nombre: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@gmail.com', telefono: '+56 9 8765 4321', tipo: 'particular', direccion: 'Los Aromos 456, Las Condes', ciudad: 'Santiago', notas: 'Prefiere que lo llamen en la mañana.', fecha_registro: '2025-03-10' },
   '2': { id: '2', nombre: 'María López', rut: '9.876.543-2', email: 'maria@empresa.cl', telefono: '+56 9 1234 5678', tipo: 'particular', direccion: 'Av. Providencia 789', ciudad: 'Santiago', notas: '', fecha_registro: '2025-06-20' },
   '3': { id: '3', nombre: 'LogiChile SpA', rut: '76.543.210-K', email: 'flota@logichile.cl', telefono: '+56 2 2345 6789', tipo: 'empresa', direccion: 'Av. Industrial 4521', ciudad: 'Pudahuel', notas: 'Empresa de transporte. Varios vehículos. Ver módulo Empresas.', fecha_registro: '2024-11-05' },
@@ -39,21 +41,21 @@ const VEHICULOS_POR_CLIENTE: Record<string, Array<{ id: string; patente: string;
   '6': [{ id: '9', patente: 'CDEF56', modelo: 'Nissan March', year: '2021', km: '38.000' }],
 }
 
-const OT_POR_CLIENTE: Record<string, Array<{ numero: string; fecha: string; estado: string; monto: string; vehiculo: string }>> = {
+const OT_POR_CLIENTE: Record<string, Array<{ id: number; numero: string; fecha: string; estado: string; monto: string; vehiculo: string }>> = {
   '1': [
-    { numero: 'OT-2026-0012', fecha: '18 may 2026', estado: 'en_proceso', monto: '$185.000', vehiculo: 'ABCD12 Toyota Hilux' },
-    { numero: 'OT-2026-0005', fecha: '5 may 2026', estado: 'entregado', monto: '$320.000', vehiculo: 'WXYZ98 Chevrolet Cruze' },
+    { id: 12, numero: 'OT-2026-0012', fecha: '18 may 2026', estado: 'en_proceso', monto: '$185.000', vehiculo: 'ABCD12 Toyota Hilux' },
+    { id: 5, numero: 'OT-2026-0005', fecha: '5 may 2026', estado: 'entregado', monto: '$320.000', vehiculo: 'WXYZ98 Chevrolet Cruze' },
   ],
   '2': [
-    { numero: 'OT-2026-0011', fecha: '15 may 2026', estado: 'listo', monto: '$95.000', vehiculo: 'EFGH34 Kia Sportage' },
+    { id: 11, numero: 'OT-2026-0011', fecha: '15 may 2026', estado: 'listo', monto: '$95.000', vehiculo: 'EFGH34 Kia Sportage' },
   ],
   '3': [
-    { numero: 'OT-2026-0010', fecha: '12 may 2026', estado: 'diagnostico', monto: 'Por cotizar', vehiculo: 'IJKL56 Ford Ranger' },
-    { numero: 'OT-2026-0007', fecha: '2 may 2026', estado: 'entregado', monto: '$450.000', vehiculo: 'MNOP78 Toyota Hilux' },
+    { id: 10, numero: 'OT-2026-0010', fecha: '12 may 2026', estado: 'diagnostico', monto: 'Por cotizar', vehiculo: 'IJKL56 Ford Ranger' },
+    { id: 7, numero: 'OT-2026-0007', fecha: '2 may 2026', estado: 'entregado', monto: '$450.000', vehiculo: 'MNOP78 Toyota Hilux' },
   ],
-  '4': [{ numero: 'OT-2026-0009', fecha: '10 may 2026', estado: 'recibido', monto: 'Por cotizar', vehiculo: 'QRST90 Hyundai Accent' }],
-  '5': [{ numero: 'OT-2026-0003', fecha: '1 abr 2026', estado: 'entregado', monto: '$890.000', vehiculo: 'UVWX12 Mercedes Actros' }],
-  '6': [{ numero: 'OT-2026-0008', fecha: '8 may 2026', estado: 'entregado', monto: '$65.000', vehiculo: 'CDEF56 Nissan March' }],
+  '4': [{ id: 9, numero: 'OT-2026-0009', fecha: '10 may 2026', estado: 'recibido', monto: 'Por cotizar', vehiculo: 'QRST90 Hyundai Accent' }],
+  '5': [{ id: 3, numero: 'OT-2026-0003', fecha: '1 abr 2026', estado: 'entregado', monto: '$890.000', vehiculo: 'UVWX12 Mercedes Actros' }],
+  '6': [{ id: 8, numero: 'OT-2026-0008', fecha: '8 may 2026', estado: 'entregado', monto: '$65.000', vehiculo: 'CDEF56 Nissan March' }],
 }
 
 const estadoOT: Record<string, { label: string; cls: string }> = {
@@ -64,16 +66,43 @@ const estadoOT: Record<string, { label: string; cls: string }> = {
   entregado: { label: 'Entregado', cls: 'bg-slate-100 text-slate-500' },
 }
 
+const CIUDADES_CHILE = [
+  'Santiago', 'Las Condes', 'Providencia', 'Maipú', 'Puente Alto', 'La Florida',
+  'Ñuñoa', 'Vitacura', 'Lo Barnechea', 'San Bernardo', 'Pudahuel', 'Quilicura',
+  'Peñalolén', 'La Reina', 'Macul', 'Estación Central', 'Colina', 'Lampa',
+  'Valparaíso', 'Viña del Mar', 'Quilpué', 'Villa Alemana', 'San Antonio',
+  'Concepción', 'Talcahuano', 'Los Ángeles', 'Coronel', 'Hualpén',
+  'Temuco', 'Padre Las Casas', 'Villarrica', 'Pucón', 'Angol',
+  'Puerto Montt', 'Osorno', 'Puerto Varas', 'Castro', 'Ancud',
+  'Antofagasta', 'Calama', 'Tocopilla', 'Mejillones',
+  'La Serena', 'Coquimbo', 'Ovalle', 'Illapel',
+  'Copiapó', 'Vallenar', 'Caldera',
+  'Rancagua', 'San Fernando', 'Pichilemu', 'Machalí',
+  'Talca', 'Curicó', 'Linares', 'Constitución',
+  'Chillán', 'San Carlos', 'Bulnes',
+  'Valdivia', 'La Unión', 'Panguipulli',
+  'Iquique', 'Alto Hospicio', 'Pozo Almonte',
+  'Arica', 'Putre',
+  'Punta Arenas', 'Puerto Natales',
+  'Coyhaique',
+].sort()
+
 export default function DetalleClientePage() {
   const params = useParams()
   const id = String(params.id)
-  const [tab, setTab] = useState<'vehiculos' | 'ordenes'>('vehiculos')
 
-  const cliente = CLIENTES[id]
+  const [clienteData, setClienteData] = useState<ClienteData | null>(CLIENTES_INICIAL[id] || null)
+  const [tab, setTab] = useState<'vehiculos' | 'ordenes'>('vehiculos')
+  const [editando, setEditando] = useState(false)
+  const [guardado, setGuardado] = useState(false)
+  const [form, setForm] = useState<ClienteData>(
+    CLIENTES_INICIAL[id] || { id, nombre: '', rut: '', email: '', telefono: '', tipo: 'particular', direccion: '', ciudad: '', notas: '', fecha_registro: '' }
+  )
+
   const vehiculos = VEHICULOS_POR_CLIENTE[id] || []
   const ordenes = OT_POR_CLIENTE[id] || []
 
-  if (!cliente) {
+  if (!clienteData) {
     return (
       <div className="fade-in">
         <Topbar title="Cliente no encontrado" />
@@ -86,9 +115,108 @@ export default function DetalleClientePage() {
     )
   }
 
+  const abrirModal = () => {
+    setForm({ ...clienteData })
+    setEditando(true)
+  }
+
+  const guardarCambios = () => {
+    setClienteData({ ...form })
+    setEditando(false)
+    setGuardado(true)
+    setTimeout(() => setGuardado(false), 3000)
+  }
+
+  const set = (campo: keyof ClienteData, valor: string) =>
+    setForm(f => ({ ...f, [campo]: valor }))
+
   return (
     <div className="fade-in">
-      <Topbar title={cliente.nombre} subtitle={`RUT: ${cliente.rut}`} />
+      <Topbar title={clienteData.nombre} subtitle={`RUT: ${clienteData.rut}`} />
+
+      {/* Modal Editar Cliente */}
+      {editando && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2">
+                <Edit size={16} className="text-slate-500" /> Editar cliente
+              </h2>
+              <button onClick={() => setEditando(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                  Nombre completo <span className="text-red-400">*</span>
+                </label>
+                <input className="input w-full" value={form.nombre} onChange={e => set('nombre', e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">RUT</label>
+                  <input className="input w-full" value={form.rut} onChange={e => set('rut', e.target.value)} placeholder="12.345.678-9" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Tipo</label>
+                  <select className="input w-full" value={form.tipo} onChange={e => set('tipo', e.target.value)}>
+                    <option value="particular">👤 Particular</option>
+                    <option value="empresa">🏢 Empresa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Teléfono</label>
+                  <input className="input w-full" type="tel" value={form.telefono} onChange={e => set('telefono', e.target.value)} placeholder="+56 9 ..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Email</label>
+                  <input className="input w-full" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">Dirección</label>
+                <input className="input w-full" value={form.direccion} onChange={e => set('direccion', e.target.value)} placeholder="Calle 123, Depto 4B" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">Ciudad / Comuna</label>
+                <select className="input w-full" value={form.ciudad} onChange={e => set('ciudad', e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  {CIUDADES_CHILE.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="Otra">Otra</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">Notas internas</label>
+                <textarea className="input w-full resize-none" rows={3}
+                  value={form.notas} onChange={e => set('notas', e.target.value)}
+                  placeholder="Observaciones, preferencias..." />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setEditando(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
+                  Cancelar
+                </button>
+                <button onClick={guardarCambios}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'var(--accent)' }}>
+                  <Save size={15} /> Guardar cambios
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 space-y-5">
 
@@ -96,49 +224,56 @@ export default function DetalleClientePage() {
           <Link href="/clientes" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700">
             <ArrowLeft size={15} /> Volver a clientes
           </Link>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">
+          <button onClick={abrirModal}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
             <Edit size={14} /> Editar cliente
           </button>
         </div>
+
+        {guardado && (
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2">
+            <CheckCircle size={16} /> Datos actualizados correctamente
+          </div>
+        )}
 
         {/* Header */}
         <div className="grid grid-cols-3 gap-5">
           <div className="col-span-2 card p-6 space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
-                style={{ backgroundColor: cliente.tipo === 'empresa' ? '#ede9fe' : '#dbeafe', color: cliente.tipo === 'empresa' ? '#7c3aed' : '#2563eb' }}>
-                {cliente.nombre.charAt(0)}
+                style={{ backgroundColor: clienteData.tipo === 'empresa' ? '#ede9fe' : '#dbeafe', color: clienteData.tipo === 'empresa' ? '#7c3aed' : '#2563eb' }}>
+                {clienteData.nombre.charAt(0)}
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-800">{cliente.nombre}</h2>
+                <h2 className="text-xl font-bold text-slate-800">{clienteData.nombre}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`badge ${cliente.tipo === 'empresa' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {cliente.tipo === 'empresa' ? '🏢 Empresa' : '👤 Particular'}
+                  <span className={`badge ${clienteData.tipo === 'empresa' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {clienteData.tipo === 'empresa' ? '🏢 Empresa' : '👤 Particular'}
                   </span>
-                  <span className="text-xs text-slate-400">RUT: {cliente.rut}</span>
+                  <span className="text-xs text-slate-400">RUT: {clienteData.rut}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2 text-slate-600">
-                <Phone size={13} className="text-slate-400" /> {cliente.telefono}
+                <Phone size={13} className="text-slate-400" /> {clienteData.telefono}
               </div>
               <div className="flex items-center gap-2 text-slate-600">
-                <Mail size={13} className="text-slate-400" /> {cliente.email}
+                <Mail size={13} className="text-slate-400" /> {clienteData.email}
               </div>
               <div className="flex items-center gap-2 text-slate-600 col-span-2">
                 <Calendar size={13} className="text-slate-400" />
-                Cliente desde {new Date(cliente.fecha_registro).toLocaleDateString('es-CL', { year: 'numeric', month: 'long' })}
+                Cliente desde {new Date(clienteData.fecha_registro).toLocaleDateString('es-CL', { year: 'numeric', month: 'long' })}
               </div>
-              {cliente.direccion && (
+              {clienteData.direccion && (
                 <div className="col-span-2 text-slate-500 text-xs bg-slate-50 rounded-lg p-2">
-                  📍 {cliente.direccion}, {cliente.ciudad}
+                  📍 {clienteData.direccion}{clienteData.ciudad ? `, ${clienteData.ciudad}` : ''}
                 </div>
               )}
-              {cliente.notas && (
+              {clienteData.notas && (
                 <div className="col-span-2 text-amber-800 text-xs bg-amber-50 border border-amber-100 rounded-lg p-2">
-                  📝 {cliente.notas}
+                  📝 {clienteData.notas}
                 </div>
               )}
             </div>
@@ -253,8 +388,8 @@ export default function DetalleClientePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ordenes.map((ot, i) => (
-                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
+                  {ordenes.map((ot) => (
+                    <tr key={ot.id} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="px-6 py-3 font-mono font-semibold text-xs" style={{ color: 'var(--accent)' }}>
                         {ot.numero}
                       </td>
@@ -265,7 +400,7 @@ export default function DetalleClientePage() {
                       </td>
                       <td className="px-6 py-3 font-semibold text-slate-700">{ot.monto}</td>
                       <td className="px-6 py-3">
-                        <Link href={`/ordenes/${i + 1}`}
+                        <Link href={`/ordenes/${ot.id}`}
                           className="flex items-center gap-1 text-xs font-medium hover:underline"
                           style={{ color: 'var(--accent)' }}>
                           Ver <ChevronRight size={12} />
